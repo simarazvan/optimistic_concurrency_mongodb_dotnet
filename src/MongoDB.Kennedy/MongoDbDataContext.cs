@@ -12,9 +12,12 @@ namespace MongoDB.Kennedy
 		private readonly MongoDatabase _db;
 
 		protected MongoDbDataContext(string databaseName,
+			string username,
+			string password,
 			string serverName = "localhost",
 			int port = 27017,
-			bool safeMode = true)
+			bool safeMode = true
+			)
 		{
 			DatabaseName = databaseName;
 			if (string.IsNullOrWhiteSpace(DatabaseName))
@@ -25,13 +28,15 @@ namespace MongoDB.Kennedy
 			if (serverName == null)
 				throw new ArgumentNullException("serverName");
 
-			string connStr = string.Format(
-				"mongodb://{0}:{1}/{2}",
-				serverName,
-				port,
-				safeMode ? "?safe=true" : "");
+		        var credential = MongoCredential.CreateMongoCRCredential(DatabaseName, username, password);
 
-			Client = new MongoClient(connStr);
+			var settings = new MongoClientSettings
+			{ 
+				Credentials = new[] { credential },
+				Server = new MongoServerAddress(serverName,port),
+			}.FrozenCopy();
+
+			Client = new MongoClient(settings);
 			Server = Client.GetServer();
 			_db = Server.GetDatabase(DatabaseName);
 		}
